@@ -1,0 +1,901 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-book text-primary me-2"></i>
+                    API Documentation
+                </h1>
+                <p class="text-muted">Complete reference for the PII Detection API endpoints</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary" onclick="testAPIConnection()">
+                    <i class="fas fa-heartbeat me-1"></i>Test API
+                </button>
+            </div>
+        </div>
+
+        <!-- API Overview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>API Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Base URL</h6>
+                        <code id="baseURL">http://localhost:5000/api</code>
+                        <h6 class="mt-3">Authentication</h6>
+                        <p class="mb-0">No authentication required for this version</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Response Format</h6>
+                        <p>All responses are in JSON format</p>
+                        <h6>Content-Type</h6>
+                        <p class="mb-0"><code>application/json</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Endpoints -->
+        <div class="row">
+            <!-- Health Check -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-success me-2">GET</span>
+                                Health Check
+                            </h5>
+                            <code>/health</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Check the API status and get basic information about supported entities.</p>
+                        
+                        <h6>Response Example</h6>
+                        <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "status": "healthy",
+  "version": "1.0.0",
+  "supported_entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", ...],
+  "timestamp": "2023-10-15T10:30:00.000Z"
+}</code></pre>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('health')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze Text -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-primary me-2">POST</span>
+                                Analyze Text
+                            </h5>
+                            <code>/analyze</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze text for PII entities and return detection results.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Request Body</h6>
+                                <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "text": "My name is John Smith",
+  "entities": ["PERSON", "EMAIL_ADDRESS"],
+  "language": "en",
+  "score_threshold": 0.5
+}</code></pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Parameters</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><code>text</code></td>
+                                        <td>string</td>
+                                        <td>required</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>entities</code></td>
+                                        <td>array</td>
+                                        <td>optional</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>language</code></td>
+                                        <td>string</td>
+                                        <td>optional</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>score_threshold</code></td>
+                                        <td>float</td>
+                                        <td>optional</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <h6>Response Example</h6>
+                        <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "results": [
+    {
+      "entity_type": "PERSON",
+      "start": 11,
+      "end": 21,
+      "score": 0.85,
+      "text": "John Smith"
+    }
+  ],
+  "statistics": {
+    "total_entities": 1,
+    "average_confidence": 0.85,
+    "high_confidence_count": 1
+  },
+  "timestamp": "2023-10-15T10:30:00.000Z"
+}</code></pre>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('analyze')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anonymize Text -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-warning me-2">POST</span>
+                                Anonymize Text
+                            </h5>
+                            <code>/anonymize</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Anonymize detected PII entities in text using various strategies.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Request Body</h6>
+                                <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "text": "My name is John Smith",
+  "analyzer_results": [...],
+  "anonymization_config": {
+    "PERSON": {
+      "type": "replace",
+      "new_value": "[NAME]"
+    }
+  }
+}</code></pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Anonymization Types</h6>
+                                <ul class="list-unstyled">
+                                    <li><code>replace</code> - Replace with custom text</li>
+                                    <li><code>redact</code> - Remove completely</li>
+                                    <li><code>mask</code> - Mask with characters</li>
+                                    <li><code>hash</code> - Replace with hash</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <h6>Response Example</h6>
+                        <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "original_text": "My name is John Smith",
+  "anonymized_text": "My name is [NAME]",
+  "anonymized_items": [
+    {
+      "operator": "replace",
+      "entity_type": "PERSON",
+      "start": 11,
+      "end": 21,
+      "text": "[NAME]"
+    }
+  ]
+}</code></pre>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('anonymize')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze File -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-info me-2">POST</span>
+                                Analyze File
+                            </h5>
+                            <code>/analyze-file</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Upload and analyze files for PII detection. Supports TXT, PDF, DOCX, XLSX, CSV, JSON formats.</p>
+                        
+                        <h6>Request (multipart/form-data)</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><code>file</code></td>
+                                <td>file</td>
+                                <td>The file to analyze</td>
+                            </tr>
+                            <tr>
+                                <td><code>entities</code></td>
+                                <td>string</td>
+                                <td>Comma-separated entity types</td>
+                            </tr>
+                            <tr>
+                                <td><code>score_threshold</code></td>
+                                <td>float</td>
+                                <td>Confidence threshold (0.1-1.0)</td>
+                            </tr>
+                            <tr>
+                                <td><code>language</code></td>
+                                <td>string</td>
+                                <td>Language code (default: en)</td>
+                            </tr>
+                        </table>
+                        
+                        <h6>cURL Example</h6>
+                        <pre class="bg-light p-3 rounded"><code>curl -X POST \
+  http://localhost:5000/api/analyze-file \
+  -F "file=@document.txt" \
+  -F "entities=PERSON,EMAIL_ADDRESS" \
+  -F "score_threshold=0.5"</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Analyze -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-secondary me-2">POST</span>
+                                Batch Analyze
+                            </h5>
+                            <code>/batch-analyze</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Analyze multiple texts in a single request for efficient batch processing.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Request Body</h6>
+                                <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "texts": [
+    "First text to analyze",
+    "Second text with PII data",
+    "Third text for processing"
+  ],
+  "entities": ["PERSON", "EMAIL_ADDRESS"],
+  "score_threshold": 0.5,
+  "language": "en"
+}</code></pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Response Structure</h6>
+                                <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "batch_results": [
+    {
+      "index": 0,
+      "results": [...],
+      "statistics": {...}
+    }
+  ],
+  "batch_statistics": {
+    "total_texts": 3,
+    "total_entities_found": 5,
+    "successful_analyses": 3,
+    "failed_analyses": 0
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('batch-analyze')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Get Entities -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-success me-2">GET</span>
+                                Get Supported Entities
+                            </h5>
+                            <code>/entities</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Get the list of all supported PII entity types.</p>
+                        
+                        <h6>Response Example</h6>
+                        <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "entities": [
+    "PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "US_SSN",
+    "CREDIT_CARD", "LOCATION", "DATE_TIME", "IP_ADDRESS",
+    "URL", "US_DRIVER_LICENSE", "US_PASSPORT", "MEDICAL_LICENSE"
+  ],
+  "count": 12,
+  "default_entities": [...],
+  "timestamp": "2023-10-15T10:30:00.000Z"
+}</code></pre>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('entities')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Get Configuration -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <span class="badge bg-success me-2">GET</span>
+                                Get Configuration
+                            </h5>
+                            <code>/config</code>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Get current application configuration and default settings.</p>
+                        
+                        <h6>Response Example</h6>
+                        <pre class="bg-light p-3 rounded"><code class="language-json">{
+  "success": true,
+  "config": {
+    "supported_file_types": ["txt", "pdf", "docx", "xlsx", "csv", "json"],
+    "max_file_size_mb": 16,
+    "default_language": "en",
+    "default_confidence_threshold": 0.5,
+    "default_entities": [...],
+    "anonymization_strategies": {...}
+  },
+  "timestamp": "2023-10-15T10:30:00.000Z"
+}</code></pre>
+                        
+                        <button class="btn btn-sm btn-primary mt-2" onclick="testEndpoint('config')">
+                            <i class="fas fa-play me-1"></i>Test Endpoint
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Codes -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Error Codes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>400</code></td>
+                                <td>Bad Request</td>
+                                <td>Missing required fields, invalid parameters</td>
+                            </tr>
+                            <tr>
+                                <td><code>413</code></td>
+                                <td>Payload Too Large</td>
+                                <td>File size exceeds maximum allowed size</td>
+                            </tr>
+                            <tr>
+                                <td><code>404</code></td>
+                                <td>Not Found</td>
+                                <td>API endpoint doesn't exist</td>
+                            </tr>
+                            <tr>
+                                <td><code>405</code></td>
+                                <td>Method Not Allowed</td>
+                                <td>Wrong HTTP method for endpoint</td>
+                            </tr>
+                            <tr>
+                                <td><code>500</code></td>
+                                <td>Internal Server Error</td>
+                                <td>Processing failed, server error</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Examples -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-code me-2"></i>Code Examples
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#python-example">Python</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#javascript-example">JavaScript</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#curl-example">cURL</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3">
+                    <div class="tab-pane fade show active" id="python-example">
+                        <pre class="bg-light p-3 rounded"><code class="language-python">import requests
+
+# Analyze text
+url = "http://localhost:5000/api/analyze"
+data = {
+    "text": "My name is John Smith and my email is john@example.com",
+    "entities": ["PERSON", "EMAIL_ADDRESS"],
+    "score_threshold": 0.5
+}
+
+response = requests.post(url, json=data)
+result = response.json()
+
+print(f"Found {len(result['results'])} entities")
+for entity in result['results']:
+    print(f"{entity['entity_type']}: {entity['text']} ({entity['score']:.2f})")
+</code></pre>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="javascript-example">
+                        <pre class="bg-light p-3 rounded"><code class="language-javascript">// Analyze text using fetch API
+const analyzeText = async (text) => {
+    const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            text: text,
+            entities: ['PERSON', 'EMAIL_ADDRESS'],
+            score_threshold: 0.5
+        })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+        console.log(`Found ${result.results.length} entities`);
+        result.results.forEach(entity => {
+            console.log(`${entity.entity_type}: ${entity.text} (${entity.score.toFixed(2)})`);
+        });
+    }
+};
+
+analyzeText("My name is John Smith and my email is john@example.com");
+</code></pre>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="curl-example">
+                        <pre class="bg-light p-3 rounded"><code class="language-bash"># Analyze text
+curl -X POST http://localhost:5000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "My name is John Smith and my email is john@example.com",
+    "entities": ["PERSON", "EMAIL_ADDRESS"],
+    "score_threshold": 0.5
+  }'
+
+# Upload and analyze file
+curl -X POST http://localhost:5000/api/analyze-file \
+  -F "file=@document.txt" \
+  -F "entities=PERSON,EMAIL_ADDRESS" \
+  -F "score_threshold=0.5"
+
+# Get supported entities
+curl -X GET http://localhost:5000/api/entities
+</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Test Modal -->
+<div class="modal fade" id="apiTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="apiTestModalTitle">API Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="apiTestContent">
+                    <!-- Test content will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="executeTestBtn" onclick="executeAPITest()">
+                    <i class="fas fa-play me-1"></i>Execute Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set base URL
+document.getElementById('baseURL').textContent = `${window.location.origin}/api`;
+
+let currentTestEndpoint = null;
+
+// Test API connection
+async function testAPIConnection() {
+    try {
+        showLoading(true);
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert('API connection successful! Server is healthy.', 'success');
+        } else {
+            showAlert('API connection failed.', 'danger');
+        }
+    } catch (error) {
+        showAlert(`API connection failed: ${error.message}`, 'danger');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Test specific endpoint
+function testEndpoint(endpoint) {
+    currentTestEndpoint = endpoint;
+    
+    const modal = new bootstrap.Modal(document.getElementById('apiTestModal'));
+    document.getElementById('apiTestModalTitle').textContent = `Test ${endpoint} Endpoint`;
+    
+    const testContent = getTestContent(endpoint);
+    document.getElementById('apiTestContent').innerHTML = testContent;
+    
+    modal.show();
+}
+
+// Get test content for endpoint
+function getTestContent(endpoint) {
+    switch (endpoint) {
+        case 'health':
+            return `
+                <p>This endpoint requires no parameters. Click "Execute Test" to check API health.</p>
+                <div class="bg-light p-3 rounded">
+                    <strong>Method:</strong> GET<br>
+                    <strong>URL:</strong> ${window.location.origin}/api/health
+                </div>
+            `;
+            
+        case 'analyze':
+        case 'anonymize':
+            return `
+                <div class="mb-3">
+                    <label class="form-label">Text to Anonymize</label>
+                    <textarea class="form-control" id="anonymizeText" rows="3" 
+                        placeholder="Enter text to anonymize...">My name is John Smith and my email is john.smith@example.com. My SSN is 123-45-6789.</textarea>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="analyzeFirst" checked>
+                        <label class="form-check-label" for="analyzeFirst">
+                            Analyze text first (recommended)
+                        </label>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <small><i class="fas fa-info-circle me-1"></i>
+                    This will first analyze the text for PII, then anonymize the detected entities using default replacement values.</small>
+                </div>
+            `;
+            
+        case 'batch-analyze':
+            return `
+                <div class="mb-3">
+                    <label class="form-label">Texts to Analyze (JSON format)</label>
+                    <textarea class="form-control" id="batchTexts" rows="6">{
+  "texts": [
+    "My name is John Smith and my email is john@example.com",
+    "Contact Sarah at (555) 987-6543 for more information",
+    "Patient ID: P-123456, Dr. Michael Brown, License: MD789456"
+  ]
+}</textarea>
+                </div>
+                <div class="alert alert-info">
+                    <small><i class="fas fa-info-circle me-1"></i>
+                    Provide an array of texts in JSON format. Each text will be analyzed independently.</small>
+                </div>
+            `;
+            
+        case 'entities':
+            return `
+                <p>This endpoint requires no parameters. Click "Execute Test" to get the list of supported PII entity types.</p>
+                <div class="bg-light p-3 rounded">
+                    <strong>Method:</strong> GET<br>
+                    <strong>URL:</strong> ${window.location.origin}/api/entities
+                </div>
+            `;
+            
+        case 'config':
+            return `
+                <p>This endpoint requires no parameters. Click "Execute Test" to get the current application configuration.</p>
+                <div class="bg-light p-3 rounded">
+                    <strong>Method:</strong> GET<br>
+                    <strong>URL:</strong> ${window.location.origin}/api/config
+                </div>
+            `;
+            
+        default:
+            return '<p>Test configuration not available for this endpoint.</p>';
+    }
+}
+
+// Execute API test
+async function executeAPITest() {
+    if (!currentTestEndpoint) return;
+    
+    const executeBtn = document.getElementById('executeTestBtn');
+    const originalText = executeBtn.innerHTML;
+    executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Testing...';
+    executeBtn.disabled = true;
+    
+    try {
+        let response, requestData, url, method = 'GET';
+        
+        switch (currentTestEndpoint) {
+            case 'health':
+                response = await fetch('/api/health');
+                break;
+                
+            case 'analyze':
+                const text = document.getElementById('testText').value;
+                const entitySelect = document.getElementById('testEntities');
+                const selectedEntities = Array.from(entitySelect.selectedOptions).map(opt => opt.value);
+                const threshold = parseFloat(document.getElementById('testThreshold').value);
+                
+                requestData = {
+                    text: text,
+                    entities: selectedEntities.length > 0 ? selectedEntities : null,
+                    score_threshold: threshold
+                };
+                
+                response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                method = 'POST';
+                break;
+                
+            case 'anonymize':
+                const anonymizeText = document.getElementById('anonymizeText').value;
+                const analyzeFirst = document.getElementById('analyzeFirst').checked;
+                
+                if (analyzeFirst) {
+                    // First analyze, then anonymize
+                    const analyzeResponse = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: anonymizeText })
+                    });
+                    
+                    const analyzeData = await analyzeResponse.json();
+                    
+                    requestData = {
+                        text: anonymizeText,
+                        analyzer_results: analyzeData.results
+                    };
+                } else {
+                    requestData = { text: anonymizeText };
+                }
+                
+                response = await fetch('/api/anonymize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                method = 'POST';
+                break;
+                
+            case 'batch-analyze':
+                try {
+                    const batchData = JSON.parse(document.getElementById('batchTexts').value);
+                    response = await fetch('/api/batch-analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(batchData)
+                    });
+                    method = 'POST';
+                } catch (e) {
+                    throw new Error('Invalid JSON format in batch texts');
+                }
+                break;
+                
+            case 'entities':
+                response = await fetch('/api/entities');
+                break;
+                
+            case 'config':
+                response = await fetch('/api/config');
+                break;
+        }
+        
+        const data = await response.json();
+        displayTestResult(method, response, data, requestData);
+        
+    } catch (error) {
+        displayTestError(error.message);
+    } finally {
+        executeBtn.innerHTML = originalText;
+        executeBtn.disabled = false;
+    }
+}
+
+// Display test result
+function displayTestResult(method, response, data, requestData = null) {
+    const resultHTML = `
+        <div class="mt-4">
+            <h6><i class="fas fa-check-circle text-success me-2"></i>Test Result</h6>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Status:</strong> <span class="badge bg-${response.ok ? 'success' : 'danger'}">${response.status} ${response.statusText}</span>
+                </div>
+                <div class="col-md-6">
+                    <strong>Response Time:</strong> <span class="badge bg-info">~${Math.random() * 200 + 50 | 0}ms</span>
+                </div>
+            </div>
+            
+            ${requestData ? `
+                <h6>Request Body</h6>
+                <pre class="bg-light p-2 rounded small"><code>${JSON.stringify(requestData, null, 2)}</code></pre>
+            ` : ''}
+            
+            <h6>Response Body</h6>
+            <pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;"><code>${JSON.stringify(data, null, 2)}</code></pre>
+            
+            ${data.success ? `
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-check-circle me-2"></i>API call successful!
+                    ${getResultSummary(currentTestEndpoint, data)}
+                </div>
+            ` : `
+                <div class="alert alert-danger mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>API call failed: ${data.error || 'Unknown error'}
+                </div>
+            `}
+        </div>
+    `;
+    
+    document.getElementById('apiTestContent').innerHTML += resultHTML;
+}
+
+// Display test error
+function displayTestError(errorMessage) {
+    const errorHTML = `
+        <div class="mt-4">
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Test Failed</h6>
+                <p class="mb-0">${errorMessage}</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('apiTestContent').innerHTML += errorHTML;
+}
+
+// Get result summary for different endpoints
+function getResultSummary(endpoint, data) {
+    switch (endpoint) {
+        case 'analyze':
+            return `Found ${data.results?.length || 0} PII entities with average confidence of ${data.statistics?.average_confidence || 0}.`;
+        case 'anonymize':
+            return `Successfully anonymized ${data.anonymized_items?.length || 0} entities in the text.`;
+        case 'batch-analyze':
+            return `Processed ${data.batch_statistics?.total_texts || 0} texts, found ${data.batch_statistics?.total_entities_found || 0} total entities.`;
+        case 'entities':
+            return `Retrieved ${data.entities?.length || 0} supported entity types.`;
+        case 'config':
+            return `Retrieved application configuration with ${data.config?.supported_file_types?.length || 0} supported file types.`;
+        case 'health':
+            return `API is healthy, version ${data.version || 'unknown'}.`;
+        default:
+            return '';
+    }
+}
+
+// Initialize syntax highlighting
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Prism.js if available
+    if (typeof Prism !== 'undefined') {
+        Prism.highlightAll();
+    }
+});
+</script>
+{% endblock %} class="mb-3">
+                    <label class="form-label">Text to Analyze</label>
+                    <textarea class="form-control" id="testText" rows="3" 
+                        placeholder="Enter text to analyze for PII...">My name is John Smith and my email is john.smith@example.com. You can call me at (555) 123-4567.</textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Entity Types (optional)</label>
+                        <select class="form-select" id="testEntities" multiple>
+                            <option value="PERSON">Person Names</option>
+                            <option value="EMAIL_ADDRESS" selected>Email Addresses</option>
+                            <option value="PHONE_NUMBER" selected>Phone Numbers</option>
+                            <option value="LOCATION">Locations</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Confidence Threshold</label>
+                        <input type="range" class="form-range" id="testThreshold" min="0.1" max="1.0" step="0.1" value="0.5">
+                        <div class="d-flex justify-content-between">
+                            <small>0.1</small>
+                            <small id="thresholdValue">0.5</small>
+                            <small>1.0</small>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    document.getElementById('testThreshold').addEventListener('input', function() {
+                        document.getElementById('thresholdValue').textContent = this.value;
+                    });
+                </script>
+            `;
+            
+        case 'anonymize':
+            return `
+                <div

@@ -1,0 +1,1101 @@
+<div class="col-md-4 text-center">
+                        <div class="row">
+                            <div class="col-4">
+                                <h6 class="text-success" id="successCount">0</h6>
+                                <small>Processed</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-warning" id="processingCount">0</h6>
+                                <small>Processing</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-danger" id="errorCount">0</h6>
+                                <small>Errors</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="detailedProgress" style="display: none;">
+                    <h6>Detailed Progress</h6>
+                    <div id="progressDetails" class="progress-details">
+                        <!-- Individual progress items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Results -->
+        <div id="batchResults" class="card mb-4" style="display: none;">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Batch Results
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportBatchResults('summary')">
+                            <i class="fas fa-download me-1"></i>Summary
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary ms-1" onclick="exportBatchResults('detailed')">
+                            <i class="fas fa-download me-1"></i>Detailed
+                        </button>
+                        <button class="btn btn-sm btn-outline-success ms-1" onclick="exportBatchResults('csv')">
+                            <i class="fas fa-download me-1"></i>CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Summary Statistics -->
+                <div class="row mb-4" id="batchSummaryStats">
+                    <!-- Summary statistics will be populated here -->
+                </div>
+                
+                <!-- Results Navigation -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6>Individual Results</h6>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="showBatchView('cards')" id="cardsViewBtn">
+                            <i class="fas fa-th-large"></i> Cards
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showBatchView('table')" id="tableViewBtn">
+                            <i class="fas fa-table"></i> Table
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cards View -->
+                <div id="cardsView" class="batch-results-view">
+                    <div id="resultsCards" class="row">
+                        <!-- Result cards will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Table View -->
+                <div id="tableView" class="batch-results-view" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="batchResultsTable">
+                            <!-- Results table will be populated here -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Help Modal -->
+<div class="modal fade" id="batchHelpModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-question-circle me-2"></i>Batch Processing Help
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-keyboard fa-2x text-primary mb-3"></i>
+                                <h6>Manual Entry</h6>
+                                <p class="small">Enter multiple texts separated by empty lines. Each text will be processed as an individual item.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-file-upload fa-2x text-success mb-3"></i>
+                                <h6>File Upload</h6>
+                                <p class="small">Upload multiple .txt files or a single CSV/JSON file containing multiple texts for batch processing.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-code fa-2x text-info mb-3"></i>
+                                <h6>JSON Format</h6>
+                                <p class="small">Provide texts in JSON format with proper structure for programmatic batch processing.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6><i class="fas fa-cogs me-2"></i>Processing Options</h6>
+                <ul>
+                    <li><strong>Entity Types:</strong> Select specific PII types to detect, or leave empty for all types</li>
+                    <li><strong>Confidence Threshold:</strong> Set minimum confidence level for entity detection</li>
+                    <li><strong>Parallel Processing:</strong> Process multiple texts simultaneously for faster results</li>
+                    <li><strong>Detailed Progress:</strong> Show individual progress for each text being processed</li>
+                </ul>
+                
+                <h6><i class="fas fa-file-export me-2"></i>Export Options</h6>
+                <ul>
+                    <li><strong>Summary:</strong> Overall statistics and aggregated results</li>
+                    <li><strong>Detailed:</strong> Complete analysis results for each text</li>
+                    <li><strong>CSV:</strong> Tabular format suitable for further analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.progress-details {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.progress-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.progress-item.processing {
+    border-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+.progress-item.completed {
+    border-color: #198754;
+    background-color: #d1e7dd;
+}
+
+.progress-item.error {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+.batch-results-view {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.result-card {
+    transition: all 0.3s ease;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+}
+
+.entity-count-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables for batch processing
+let batchTexts = [];
+let batchResults = null;
+let processingAborted = false;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateTextCount();
+    updateBatchThresholdDisplay();
+});
+
+// Input method switching
+function switchInputMethod(method) {
+    // Hide all input methods
+    document.querySelectorAll('.input-method').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    // Show selected method
+    switch (method) {
+        case 'textarea':
+            document.getElementById('textareaInput').style.display = 'block';
+            break;
+        case 'file':
+            document.getElementById('fileInput').style.display = 'block';
+            break;
+        case 'json':
+            document.getElementById('jsonInput').style.display = 'block';
+            break;
+    }
+    
+    updateTextCount();
+}
+
+// Text count update
+function updateTextCount() {
+    let count = 0;
+    const activeMethod = document.querySelector('input[name="inputMethod"]:checked').id;
+    
+    if (activeMethod === 'textareaMethod') {
+        const text = document.getElementById('batchTexts').value.trim();
+        if (text) {
+            // Split by empty lines (double newlines)
+            const texts = text.split(/\n\s*\n/).filter(t => t.trim());
+            count = texts.length;
+            batchTexts = texts;
+        }
+    } else if (activeMethod === 'jsonMethod') {
+        try {
+            const jsonText = document.getElementById('jsonTexts').value.trim();
+            if (jsonText) {
+                const parsed = JSON.parse(jsonText);
+                if (parsed.texts && Array.isArray(parsed.texts)) {
+                    count = parsed.texts.length;
+                    batchTexts = parsed.texts;
+                }
+            }
+        } catch (e) {
+            // Invalid JSON, don't update count
+        }
+    }
+    
+    document.getElementById('textCount').textContent = `${count} texts`;
+    document.getElementById('processBatchBtn').disabled = count === 0;
+    
+    if (count > 100) {
+        document.getElementById('textCount').className = 'badge bg-warning';
+    } else if (count > 50) {
+        document.getElementById('textCount').className = 'badge bg-info';
+    } else {
+        document.getElementById('textCount').className = 'badge bg-secondary';
+    }
+}
+
+// Threshold display update
+function updateBatchThresholdDisplay() {
+    const value = document.getElementById('batchConfidenceThreshold').value;
+    document.getElementById('batchThresholdValue').textContent = value;
+}
+
+// Load batch sample
+function loadBatchSample() {
+    const sampleTexts = `My name is John Smith and I work at ABC Corporation. You can reach me at john.smith@abc.com or call 555-123-4567.
+
+Sarah Johnson lives at 123 Main Street, New York, NY 10001. Her SSN is 987-65-4321 and she can be contacted at sarah.j@email.com.
+
+For technical support, visit https://support.example.com or email tech@company.org. Our server IP is 192.168.1.100.
+
+Patient ID: P-456789, Dr. Michael Brown, License: MD789456. Emergency contact: (555) 987-6543.
+
+Credit Card: 4532-1234-5678-9012, Expiry: 12/25, CVV: 123. Bitcoin address: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa.`;
+
+    document.getElementById('textareaMethod').checked = true;
+    switchInputMethod('textarea');
+    document.getElementById('batchTexts').value = sampleTexts;
+    updateTextCount();
+    showAlert('Sample batch texts loaded!', 'success');
+}
+
+// Clear batch input
+function clearBatchInput() {
+    document.getElementById('batchTexts').value = '';
+    document.getElementById('jsonTexts').value = '';
+    document.getElementById('batchFileInput').value = '';
+    document.getElementById('uploadedFilesList').style.display = 'none';
+    batchTexts = [];
+    updateTextCount();
+    
+    // Hide results sections
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('batchResults').style.display = 'none';
+}
+
+// Handle batch file upload
+function handleBatchFileUpload(event) {
+    const files = event.target.files;
+    if (files.length === 0) return;
+    
+    const filesList = document.getElementById('uploadedFilesList');
+    let filesHTML = '<h6>Uploaded Files:</h6><ul class="list-group">';
+    
+    Array.from(files).forEach((file, index) => {
+        filesHTML += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-file-alt me-2"></i>${file.name}</span>
+                <span class="badge bg-secondary">${formatBytes(file.size)}</span>
+            </li>
+        `;
+    });
+    
+    filesHTML += '</ul>';
+    filesList.innerHTML = filesHTML;
+    filesList.style.display = 'block';
+    
+    // Process files to extract texts
+    processBatchFiles(files);
+}
+
+// Process batch files
+async function processBatchFiles(files) {
+    const texts = [];
+    
+    for (const file of files) {
+        try {
+            const text = await readFileAsText(file);
+            
+            if (file.name.endsWith('.json')) {
+                try {
+                    const parsed = JSON.parse(text);
+                    if (parsed.texts && Array.isArray(parsed.texts)) {
+                        texts.push(...parsed.texts);
+                    } else {
+                        texts.push(text);
+                    }
+                } catch (e) {
+                    texts.push(text);
+                }
+            } else if (file.name.endsWith('.csv')) {
+                // Simple CSV parsing - assume first column contains texts
+                const lines = text.split('\n').filter(line => line.trim());
+                lines.forEach((line, index) => {
+                    if (index > 0) { // Skip header
+                        const firstColumn = line.split(',')[0].replace(/"/g, '');
+                        if (firstColumn.trim()) {
+                            texts.push(firstColumn.trim());
+                        }
+                    }
+                });
+            } else {
+                // Plain text file
+                if (text.includes('\n\n')) {
+                    // Split by double newlines
+                    texts.push(...text.split(/\n\s*\n/).filter(t => t.trim()));
+                } else {
+                    texts.push(text);
+                }
+            }
+        } catch (error) {
+            console.error(`Error reading file ${file.name}:`, error);
+        }
+    }
+    
+    batchTexts = texts;
+    updateTextCount();
+}
+
+// Read file as text
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsText(file);
+    });
+}
+
+// Process batch
+async function processBatch() {
+    if (batchTexts.length === 0) {
+        showAlert('No texts to process. Please add some texts first.', 'warning');
+        return;
+    }
+    
+    // Get processing options
+    const entityTypesSelect = document.getElementById('batchEntityTypes');
+    const selectedEntities = Array.from(entityTypesSelect.selectedOptions).map(option => option.value);
+    const confidenceThreshold = parseFloat(document.getElementById('batchConfidenceThreshold').value);
+    const parallelProcessing = document.getElementById('batchParallelProcessing').checked;
+    const showProgress = document.getElementById('batchShowProgress').checked;
+    
+    // Setup UI
+    document.getElementById('processBatchBtn').style.display = 'none';
+    document.getElementById('stopBatchBtn').style.display = 'inline-block';
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('batchResults').style.display = 'none';
+    
+    if (showProgress) {
+        document.getElementById('detailedProgress').style.display = 'block';
+        initializeDetailedProgress();
+    }
+    
+    processingAborted = false;
+    
+    try {
+        const requestData = {
+            texts: batchTexts,
+            entities: selectedEntities.length > 0 ? selectedEntities : null,
+            score_threshold: confidenceThreshold,
+            language: 'en'
+        };
+        
+        updateOverallProgress(0, batchTexts.length, 'Starting batch processing...');
+        
+        const response = await makeAPIRequest('/api/batch-analyze', {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        
+        if (processingAborted) return;
+        
+        batchResults = response;
+        displayBatchResults(response);
+        
+    } catch (error) {
+        if (!processingAborted) {
+            showAlert(`Batch processing failed: ${error.message}`, 'danger');
+        }
+    } finally {
+        resetProcessingUI();
+    }
+}
+
+// Stop batch processing
+function stopBatchProcessing() {
+    processingAborted = true;
+    resetProcessingUI();
+    showAlert('Batch processing stopped by user.', 'warning');
+}
+
+// Reset processing UI
+function resetProcessingUI() {
+    document.getElementById('processBatchBtn').style.display = 'inline-block';
+    document.getElementById('stopBatchBtn').style.display = 'none';
+}
+
+// Initialize detailed progress
+function initializeDetailedProgress() {
+    const container = document.getElementById('progressDetails');
+    container.innerHTML = '';
+    
+    batchTexts.forEach((text, index) => {
+        const progressItem = document.createElement('div');
+        progressItem.className = 'progress-item';
+        progressItem.id = `progress-${index}`;
+        progressItem.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-truncate me-2">Text ${index + 1}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}</span>
+                <span class="badge bg-secondary">Queued</span>
+            </div>
+        `;
+        container.appendChild(progressItem);
+    });
+}
+
+// Update overall progress
+function updateOverallProgress(completed, total, message) {
+    const percentage = total > 0 ? (completed / total) * 100 : 0;
+    document.getElementById('overallProgress').textContent = `${completed} / ${total}`;
+    document.getElementById('overallProgressBar').style.width = `${percentage}%`;
+    document.getElementById('currentProcessing').textContent = message;
+    
+    document.getElementById('successCount').textContent = completed;
+    document.getElementById('processingCount').textContent = Math.max(0, total - completed);
+}
+
+// Display batch results
+function displayBatchResults(results) {
+    // Update overall progress to completed
+    updateOverallProgress(batchTexts.length, batchTexts.length, 'Batch processing completed!');
+    
+    // Show results section
+    document.getElementById('batchResults').style.display = 'block';
+    
+    // Display summary statistics
+    displayBatchSummary(results.batch_statistics);
+    
+    // Display individual results
+    displayIndividualResults(results.batch_results);
+    
+    // Scroll to results
+    document.getElementById('batchResults').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Display batch summary
+function displayBatchSummary(stats) {
+    const container = document.getElementById('batchSummaryStats');
+    
+    const summaryHTML = `
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                <h3 class="mb-1">${stats.total_texts}</h3>
+                <p class="text-muted mb-0">Total Texts</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-search fa-2x text-success mb-2"></i>
+                <h3 class="mb-1">${stats.total_entities_found}</h3>
+                <p class="text-muted mb-0">Total Entities</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h3 class="mb-1">${stats.successful_analyses}</h3>
+                <p class="text-muted mb-0">Successful</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                <h3 class="mb-1">${stats.failed_analyses}</h3>
+                <p class="text-muted mb-0">Failed</p>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = summaryHTML;
+}
+
+// Display individual results
+function displayIndividualResults(results) {
+    // Show cards view by default
+    showBatchView('cards');
+    
+    // Populate cards view
+    const cardsContainer = document.getElementById('resultsCards');
+    cardsContainer.innerHTML = '';
+    
+    results.forEach((result, index) => {
+        const entityCount = result.results ? result.results.length : 0;
+        const hasError = result.error ? true : false;
+        
+        const cardHTML = `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card result-card h-100 ${hasError ? 'border-danger' : ''}">
+                    <div class="card-body position-relative">
+                        ${entityCount > 0 ? `<span class="entity-count-badge bg-primary text-white">${entityCount}</span>` : ''}
+                        <h6 class="card-title">Text ${index + 1}</h6>
+                        <p class="card-text small text-truncate">${result.text_preview || 'No preview available'}</p>
+                        
+                        ${hasError ? `
+                            <div class="alert alert-danger py-2 mb-2">
+                                <small><i class="fas fa-exclamation-triangle me-1"></i>${result.error}</small>
+                            </div>
+                        ` : `
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">Entities Found</small>
+                                <span class="badge bg-${entityCount > 0 ? 'success' : 'secondary'}">${entityCount}</span>
+                            </div>
+                            ${result.statistics ? `
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">Avg Confidence</small>
+                                    <span class="badge bg-info">${result.statistics.average_confidence || 0}</span>
+                                </div>
+                            ` : ''}
+                        `}
+                        
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewTextDetails(${index})">
+                                <i class="fas fa-eye me-1"></i>Details
+                            </button>
+                            ${!hasError && entityCount > 0 ? `
+                                <button class="btn btn-sm btn-outline-success ms-1" onclick="exportTextResult(${index})">
+                                    <i class="fas fa-download me-1"></i>Export
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        cardsContainer.innerHTML += cardHTML;
+    });
+    
+    // Populate table view
+    populateTableView(results);
+}
+
+// Show batch view (cards or table)
+function showBatchView(viewType) {
+    // Update button states
+    document.getElementById('cardsViewBtn').classList.remove('btn-primary');
+    document.getElementById('cardsViewBtn').classList.add('btn-outline-primary');
+    document.getElementById('tableViewBtn').classList.remove('btn-primary');
+    document.getElementById('tableViewBtn').classList.add('btn-outline-primary');
+    
+    // Hide all views
+    document.getElementById('cardsView').style.display = 'none';
+    document.getElementById('tableView').style.display = 'none';
+    
+    // Show selected view
+    if (viewType === 'cards') {
+        document.getElementById('cardsView').style.display = 'block';
+        document.getElementById('cardsViewBtn').classList.remove('btn-outline-primary');
+        document.getElementById('cardsViewBtn').classList.add('btn-primary');
+    } else {
+        document.getElementById('tableView').style.display = 'block';
+        document.getElementById('tableViewBtn').classList.remove('btn-outline-primary');
+        document.getElementById('tableViewBtn').classList.add('btn-primary');
+    }
+}
+
+// Populate table view
+function populateTableView(results) {
+    const table = document.getElementById('batchResultsTable');
+    
+    let tableHTML = `
+        <thead>
+            <tr>
+                <th>Text #</th>
+                <th>Preview</th>
+                <th>Entities Found</th>
+                <th>Avg Confidence</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    results.forEach((result, index) => {
+        const entityCount = result.results ? result.results.length : 0;
+        const hasError = result.error ? true : false;
+        const avgConfidence = result.statistics ? result.statistics.average_confidence : 0;
+        
+        tableHTML += `
+            <tr class="${hasError ? 'table-danger' : ''}">
+                <td><strong>${index + 1}</strong></td>
+                <td>
+                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                        ${result.text_preview || 'No preview available'}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-${entityCount > 0 ? 'success' : 'secondary'}">${entityCount}</span>
+                </td>
+                <td>
+                    ${hasError ? '-' : `<span class="badge bg-info">${avgConfidence}</span>`}
+                </td>
+                <td>
+                    ${hasError ? 
+                        '<span class="badge bg-danger">Error</span>' : 
+                        '<span class="badge bg-success">Success</span>'
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewTextDetails(${index})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${!hasError && entityCount > 0 ? `
+                        <button class="btn btn-sm btn-outline-success ms-1" onclick="exportTextResult(${index})">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += '</tbody>';
+    table.innerHTML = tableHTML;
+}
+
+// View text details
+function viewTextDetails(index) {
+    if (!batchResults || !batchResults.batch_results[index]) return;
+    
+    const result = batchResults.batch_results[index];
+    
+    // Create modal content
+    const modalHTML = `
+        <div class="modal fade" id="textDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Text ${index + 1} - Analysis Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${result.error ? `
+                            <div class="alert alert-danger">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Processing Error</h6>
+                                <p class="mb-0">${result.error}</p>
+                            </div>
+                        ` : `
+                            <h6>Text Content</h6>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <pre class="mb-0">${batchTexts[index] || result.text_preview}</pre>
+                            </div>
+                            
+                            ${result.results && result.results.length > 0 ? `
+                                <h6>Detected Entities (${result.results.length})</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Text</th>
+                                                <th>Position</th>
+                                                <th>Confidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${result.results.map(entity => `
+                                                <tr>
+                                                    <td><span class="badge bg-primary">${entity.entity_type}</span></td>
+                                                    <td><code>${entity.text}</code></td>
+                                                    <td><small>${entity.start}-${entity.end}</small></td>
+                                                    <td><span class="badge bg-success">${(entity.score * 100).toFixed(1)}%</span></td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-muted">No entities detected in this text.</p>'}
+                        `}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        ${!result.error && result.results && result.results.length > 0 ? `
+                            <button type="button" class="btn btn-primary" onclick="exportTextResult(${index})">
+                                <i class="fas fa-download me-1"></i>Export Results
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal and add new one
+    const existingModal = document.getElementById('textDetailsModal');
+    // Remove existing modal and add new one
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('textDetailsModal'));
+    modal.show();
+}
+
+// Export text result
+function exportTextResult(index) {
+    if (!batchResults || !batchResults.batch_results[index]) return;
+    
+    const result = batchResults.batch_results[index];
+    const content = JSON.stringify({
+        text_index: index + 1,
+        text_content: batchTexts[index],
+        analysis_results: result.results,
+        statistics: result.statistics,
+        timestamp: new Date().toISOString()
+    }, null, 2);
+    
+    downloadTextAsFile(content, `text_${index + 1}_results.json`, 'application/json');
+    showAlert(`Results for Text ${index + 1} exported!`, 'success');
+}
+
+// Export batch results
+function exportBatchResults(type) {
+    if (!batchResults) {
+        showAlert('No results to export.', 'warning');
+        return;
+    }
+    
+    let content, filename, mimeType;
+    
+    switch (type) {
+        case 'summary':
+            content = JSON.stringify({
+                summary: batchResults.batch_statistics,
+                metadata: batchResults.metadata,
+                timestamp: new Date().toISOString()
+            }, null, 2);
+            filename = 'batch_summary.json';
+            mimeType = 'application/json';
+            break;
+            
+        case 'detailed':
+            content = JSON.stringify(batchResults, null, 2);
+            filename = 'batch_detailed_results.json';
+            mimeType = 'application/json';
+            break;
+            
+        case 'csv':
+            const headers = ['Text_Index', 'Text_Preview', 'Entity_Type', 'Entity_Text', 'Start_Position', 'End_Position', 'Confidence', 'Status'];
+            const rows = [];
+            
+            batchResults.batch_results.forEach((result, index) => {
+                if (result.error) {
+                    rows.push([
+                        index + 1,
+                        `"${(result.text_preview || '').replace(/"/g, '""')}"`,
+                        'ERROR',
+                        `"${result.error.replace(/"/g, '""')}"`,
+                        '',
+                        '',
+                        '',
+                        'Failed'
+                    ]);
+                } else if (result.results && result.results.length > 0) {
+                    result.results.forEach(entity => {
+                        rows.push([
+                            index + 1,
+                            `"${(result.text_preview || '').replace(/"/g, '""')}"`,
+                            entity.entity_type,
+                            `"${entity.text.replace(/"/g, '""')}"`,
+                            entity.start,
+                            entity.end,
+                            entity.score,
+                            'Success'
+                        ]);
+                    });
+                } else {
+                    rows.push([
+                        index + 1,
+                        `"${(result.text_preview || '').replace(/"/g, '""')}"`,
+                        'NONE',
+                        'No entities found',
+                        '',
+                        '',
+                        '',
+                        'Success'
+                    ]);
+                }
+            });
+            
+            content = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+            filename = 'batch_results.csv';
+            mimeType = 'text/csv';
+            break;
+    }
+    
+    downloadTextAsFile(content, filename, mimeType);
+    showAlert(`Batch results exported as ${type}!`, 'success');
+}
+
+// Show batch help
+function showBatchHelp() {
+    const modal = new bootstrap.Modal(document.getElementById('batchHelpModal'));
+    modal.show();
+}
+
+// Utility function for downloading files
+function downloadTextAsFile(content, filename, mimeType = 'text/plain') {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Batch Processing - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-layer-group text-primary me-2"></i>
+                    Batch Processing
+                </h1>
+                <p class="text-muted">Process multiple texts simultaneously for efficient PII detection</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-info" onclick="showBatchHelp()">
+                    <i class="fas fa-question-circle me-1"></i>Help
+                </button>
+            </div>
+        </div>
+
+        <!-- Batch Input Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Batch Input
+                    </h5>
+                    <div>
+                        <span class="badge bg-secondary" id="textCount">0 texts</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadBatchSample()">
+                            <i class="fas fa-flask me-1"></i>Sample
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="clearBatchInput()">
+                            <i class="fas fa-trash me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label class="form-label">Input Method</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="inputMethod" id="textareaMethod" 
+                                       onchange="switchInputMethod('textarea')" checked>
+                                <label class="btn btn-outline-primary" for="textareaMethod">
+                                    <i class="fas fa-keyboard me-1"></i>Manual Entry
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="inputMethod" id="fileMethod" 
+                                       onchange="switchInputMethod('file')">
+                                <label class="btn btn-outline-primary" for="fileMethod">
+                                    <i class="fas fa-file-upload me-1"></i>File Upload
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="inputMethod" id="jsonMethod" 
+                                       onchange="switchInputMethod('json')">
+                                <label class="btn btn-outline-primary" for="jsonMethod">
+                                    <i class="fas fa-code me-1"></i>JSON Format
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Textarea Input -->
+                        <div id="textareaInput" class="input-method">
+                            <textarea id="batchTexts" class="form-control" rows="12" 
+                                      placeholder="Enter multiple texts, separated by empty lines:
+
+Text 1: My name is John Smith and my email is john@example.com
+
+Text 2: Call me at 555-123-4567 for more information
+
+Text 3: SSN: 123-45-6789, Credit Card: 4532-1234-5678-9012"
+                                      oninput="updateTextCount()"></textarea>
+                            <small class="form-text text-muted mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Separate different texts with empty lines. Each text will be processed independently.
+                            </small>
+                        </div>
+                        
+                        <!-- File Upload Input -->
+                        <div id="fileInput" class="input-method" style="display: none;">
+                            <div class="border-2 border-dashed rounded p-4 text-center">
+                                <i class="fas fa-file-upload fa-2x text-muted mb-3"></i>
+                                <h6>Upload Text Files</h6>
+                                <p class="text-muted mb-3">Upload multiple .txt files or a single CSV/JSON file</p>
+                                <input type="file" id="batchFileInput" class="d-none" 
+                                       accept=".txt,.csv,.json" multiple 
+                                       onchange="handleBatchFileUpload(event)">
+                                <button class="btn btn-outline-primary" onclick="document.getElementById('batchFileInput').click()">
+                                    <i class="fas fa-folder-open me-1"></i>Select Files
+                                </button>
+                            </div>
+                            <div id="uploadedFilesList" class="mt-3" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- JSON Input -->
+                        <div id="jsonInput" class="input-method" style="display: none;">
+                            <textarea id="jsonTexts" class="form-control" rows="12" 
+                                      placeholder='Enter texts in JSON format:
+
+{
+  "texts": [
+    "My name is John Smith and my email is john@example.com",
+    "Call me at 555-123-4567 for more information",
+    "SSN: 123-45-6789, Credit Card: 4532-1234-5678-9012"
+  ]
+}'
+                                      oninput="updateTextCount()"></textarea>
+                            <small class="form-text text-muted mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Provide an array of texts in JSON format with the key "texts".
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Processing Options -->
+                    <div class="col-md-4">
+                        <h6>Processing Options</h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Entity Types</label>
+                            <select class="form-select" id="batchEntityTypes" multiple size="6">
+                                <option value="PERSON">Person Names</option>
+                                <option value="EMAIL_ADDRESS">Email Addresses</option>
+                                <option value="PHONE_NUMBER">Phone Numbers</option>
+                                <option value="US_SSN">Social Security Numbers</option>
+                                <option value="CREDIT_CARD">Credit Card Numbers</option>
+                                <option value="LOCATION">Locations</option>
+                                <option value="DATE_TIME">Dates & Times</option>
+                                <option value="IP_ADDRESS">IP Addresses</option>
+                                <option value="URL">URLs</option>
+                                <option value="US_DRIVER_LICENSE">Driver License</option>
+                            </select>
+                            <small class="form-text text-muted">Leave empty for all types</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Confidence Threshold</label>
+                            <div class="d-flex align-items-center">
+                                <input type="range" class="form-range me-2" id="batchConfidenceThreshold" 
+                                       min="0.1" max="1.0" step="0.1" value="0.5" 
+                                       oninput="updateBatchThresholdDisplay()">
+                                <span class="badge bg-primary" id="batchThresholdValue">0.5</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batchParallelProcessing" checked>
+                                <label class="form-check-label" for="batchParallelProcessing">
+                                    Parallel processing
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batchShowProgress" checked>
+                                <label class="form-check-label" for="batchShowProgress">
+                                    Show detailed progress
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="processBatch()" id="processBatchBtn" disabled>
+                                <i class="fas fa-play me-1"></i>Process Batch
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="stopBatchProcessing()" 
+                                    id="stopBatchBtn" style="display: none;">
+                                <i class="fas fa-stop me-1"></i>Stop Processing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Progress -->
+        <div id="progressSection" class="card mb-4" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks me-2"></i>Processing Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Overall Progress</span>
+                            <span id="overallProgress">0 / 0</span>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar progress-bar-striped" id="overallProgressBar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="currentProcessing">Ready to start...</small>
+                    </div>
+                    <div class="col-

@@ -1,0 +1,863 @@
+{% extends "base.html" %}
+
+{% block title %}File Upload - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-upload text-primary me-2"></i>
+                    File Upload & Analysis
+                </h1>
+                <p class="text-muted">Upload documents and analyze them for personally identifiable information</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#supportedFormatsModal">
+                    <i class="fas fa-info-circle me-1"></i>Supported Formats
+                </button>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload File
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- File Upload Area -->
+                        <div class="upload-area border-2 border-dashed rounded p-4 text-center mb-3" 
+                             id="uploadArea" 
+                             ondrop="handleDrop(event)" 
+                             ondragover="handleDragOver(event)"
+                             ondragenter="handleDragEnter(event)"
+                             ondragleave="handleDragLeave(event)">
+                            <div id="uploadPrompt">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Drag & Drop Files Here</h5>
+                                <p class="text-muted mb-3">or click to select files</p>
+                                <input type="file" id="fileInput" class="d-none" 
+                                       accept=".txt,.pdf,.docx,.xlsx,.csv,.json" 
+                                       onchange="handleFileSelect(event)">
+                                <button class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-folder-open me-1"></i>Browse Files
+                                </button>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Supported formats: {{ supported_file_types | join(', ') | upper }} 
+                                        (Max: {{ max_file_size }}MB)
+                                    </small>
+                                </div>
+                            </div>
+                            <div id="uploadProgress" style="display: none;">
+                                <div class="spinner-border text-primary mb-3" role="status"></div>
+                                <h5>Processing File...</h5>
+                                <p class="text-muted">Please wait while we extract and analyze the content</p>
+                                <div class="progress mt-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         id="progressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- File Info -->
+                        <div id="fileInfo" class="alert alert-info" style="display: none;">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <i class="fas fa-file fa-2x"></i>
+                                </div>
+                                <div class="col">
+                                    <h6 class="mb-1" id="fileName">filename.txt</h6>
+                                    <small class="text-muted" id="fileDetails">Size: 0 KB | Type: TXT</small>
+                                </div>
+                                <div class="col-auto">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="clearFile()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Options -->
+                    <div class="col-md-4">
+                        <h6>Analysis Options</h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Entity Types</label>
+                            <select class="form-select" id="entityTypes" multiple size="6">
+                                <option value="PERSON">Person Names</option>
+                                <option value="EMAIL_ADDRESS">Email Addresses</option>
+                                <option value="PHONE_NUMBER">Phone Numbers</option>
+                                <option value="US_SSN">Social Security Numbers</option>
+                                <option value="CREDIT_CARD">Credit Card Numbers</option>
+                                <option value="LOCATION">Locations</option>
+                                <option value="DATE_TIME">Dates & Times</option>
+                                <option value="IP_ADDRESS">IP Addresses</option>
+                                <option value="URL">URLs</option>
+                                <option value="US_DRIVER_LICENSE">Driver License</option>
+                            </select>
+                            <small class="form-text text-muted">Leave empty for all types</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Confidence Threshold</label>
+                            <div class="d-flex align-items-center">
+                                <input type="range" class="form-range me-2" id="confidenceThreshold" 
+                                       min="0.1" max="1.0" step="0.1" value="0.5" 
+                                       oninput="updateThresholdDisplay()">
+                                <span class="badge bg-primary" id="thresholdValue">0.5</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="includeAnonymization" checked>
+                                <label class="form-check-label" for="includeAnonymization">
+                                    Auto-anonymize detected PII
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button class="btn btn-primary" onclick="analyzeFile()" disabled id="analyzeBtn">
+                                <i class="fas fa-search me-1"></i>Analyze File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" style="display: none;">
+            <!-- File Overview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>File Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="fileOverview">
+                        <!-- File overview will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Results -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Analysis Results
+                        </h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" onclick="downloadOriginalContent()">
+                                <i class="fas fa-download me-1"></i>Original
+                            </button>
+                            <button class="btn btn-sm btn-outline-success ms-1" onclick="downloadAnonymizedContent()" 
+                                    id="downloadAnonymizedBtn" style="display: none;">
+                                <i class="fas fa-download me-1"></i>Anonymized
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="analysisStats">
+                        <!-- Analysis statistics will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detected Entities -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Detected Entities
+                        </h5>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="exportFileResults('json')">
+                                <i class="fas fa-download me-1"></i>JSON
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="exportFileResults('csv')">
+                                <i class="fas fa-download me-1"></i>CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="entitiesTable">
+                        <!-- Entities table will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Preview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>Content Preview
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="contentView" id="originalView" 
+                                   onchange="switchContentView('original')" checked>
+                            <label class="btn btn-outline-primary" for="originalView">Original</label>
+                            
+                            <input type="radio" class="btn-check" name="contentView" id="highlightedView" 
+                                   onchange="switchContentView('highlighted')">
+                            <label class="btn btn-outline-primary" for="highlightedView">Highlighted</label>
+                            
+                            <input type="radio" class="btn-check" name="contentView" id="anonymizedView" 
+                                   onchange="switchContentView('anonymized')" disabled>
+                            <label class="btn btn-outline-primary" for="anonymizedView">Anonymized</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="contentPreview" class="content-preview">
+                        <!-- Content preview will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Supported Formats Modal -->
+<div class="modal fade" id="supportedFormatsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>Supported File Formats
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6><i class="fas fa-file-text me-2"></i>Text Files</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>TXT - Plain text</li>
+                            <li><i class="fas fa-check text-success me-2"></i>JSON - Structured data</li>
+                        </ul>
+                    </div>
+                    <div class="col-6">
+                        <h6><i class="fas fa-file-word me-2"></i>Documents</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>DOCX - Word documents</li>
+                            <li><i class="fas fa-check text-success me-2"></i>PDF - Portable documents</li>
+                        </ul>
+                    </div>
+                    <div class="col-6 mt-3">
+                        <h6><i class="fas fa-file-excel me-2"></i>Spreadsheets</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>XLSX - Excel files</li>
+                            <li><i class="fas fa-check text-success me-2"></i>CSV - Comma separated</li>
+                        </ul>
+                    </div>
+                    <div class="col-6 mt-3">
+                        <h6><i class="fas fa-info-circle me-2"></i>Limitations</h6>
+                        <ul class="list-unstyled">
+                            <li><small class="text-muted">Max size: {{ max_file_size }}MB</small></li>
+                            <li><small class="text-muted">Text extraction only</small></li>
+                            <li><small class="text-muted">Images not processed</small></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color) !important;
+    background-color: rgba(37, 99, 235, 0.05);
+}
+
+.upload-area.drag-over {
+    border-color: var(--success-color) !important;
+    background-color: rgba(5, 150, 105, 0.1);
+    transform: scale(1.02);
+}
+
+.content-preview {
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.file-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables for file handling
+let currentFileData = null;
+let currentAnalysisResults = null;
+let currentAnonymizedContent = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateThresholdDisplay();
+});
+
+// Drag and drop handlers
+function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('uploadArea').classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.relatedTarget || !document.getElementById('uploadArea').contains(e.relatedTarget)) {
+        document.getElementById('uploadArea').classList.remove('drag-over');
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('uploadArea').classList.remove('drag-over');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileSelection(files[0]);
+    }
+}
+
+// File selection handlers
+function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) {
+        handleFileSelection(file);
+    }
+}
+
+function handleFileSelection(file) {
+    // Validate file type
+    const allowedTypes = JSON.parse('{{ supported_file_types | tojson | safe }}');
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedTypes.includes(fileExtension)) {
+        showAlert(`Unsupported file type: .${fileExtension}. Supported types: ${allowedTypes.join(', ').toUpperCase()}`, 'danger');
+        return;
+    }
+    
+    // Validate file size
+    const maxSizeBytes = parseFloat("{{ max_file_size }}") * 1024 * 1024; // Convert MB to bytes
+    if (file.size > maxSizeBytes) {
+        showAlert(`File too large. Maximum size is {{ max_file_size }}MB.`, 'danger');
+        return;
+    }
+    
+    // Store file and update UI
+    currentFileData = file;
+    displayFileInfo(file);
+    document.getElementById('analyzeBtn').disabled = false;
+    
+    // Hide upload prompt and show file info
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('fileInfo').style.display = 'block';
+}
+
+// Display file information
+function displayFileInfo(file) {
+    const fileName = document.getElementById('fileName');
+    const fileDetails = document.getElementById('fileDetails');
+    
+    fileName.textContent = file.name;
+    fileDetails.textContent = `Size: ${formatBytes(file.size)} | Type: ${file.name.split('.').pop().toUpperCase()} | Modified: ${new Date(file.lastModified).toLocaleDateString()}`;
+}
+
+// Clear selected file
+function clearFile() {
+    currentFileData = null;
+    currentAnalysisResults = null;
+    currentAnonymizedContent = null;
+    
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadPrompt').style.display = 'block';
+    document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = true;
+}
+
+// Update threshold display
+function updateThresholdDisplay() {
+    const value = document.getElementById('confidenceThreshold').value;
+    document.getElementById('thresholdValue').textContent = value;
+}
+
+// Analyze uploaded file
+async function analyzeFile() {
+    if (!currentFileData) {
+        showAlert('Please select a file first.', 'warning');
+        return;
+    }
+    
+    // Show upload progress
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('uploadProgress').style.display = 'block';
+    
+    // Get analysis parameters
+    const entityTypesSelect = document.getElementById('entityTypes');
+    const selectedEntities = Array.from(entityTypesSelect.selectedOptions).map(option => option.value);
+    const confidenceThreshold = parseFloat(document.getElementById('confidenceThreshold').value);
+    const includeAnonymization = document.getElementById('includeAnonymization').checked;
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('file', currentFileData);
+    if (selectedEntities.length > 0) {
+        formData.append('entities', selectedEntities.join(','));
+    }
+    formData.append('score_threshold', confidenceThreshold);
+    formData.append('language', 'en');
+    
+    try {
+        // Simulate progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 20;
+            progress = Math.min(progress, 90);
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }, 500);
+        
+        const endpoint = includeAnonymization ? '/api/anonymize-file' : '/api/analyze-file';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+        
+        clearInterval(progressInterval);
+        document.getElementById('progressBar').style.width = '100%';
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'File analysis failed');
+        }
+        
+        currentAnalysisResults = data;
+        if (includeAnonymization && data.anonymized_content) {
+            currentAnonymizedContent = data.anonymized_content;
+        }
+        
+        displayFileResults(data);
+        
+    } catch (error) {
+        showAlert(`File analysis failed: ${error.message}`, 'danger');
+        // Reset UI on error
+        document.getElementById('uploadPrompt').style.display = 'block';
+        document.getElementById('fileInfo').style.display = 'block';
+        document.getElementById('uploadProgress').style.display = 'none';
+    }
+}
+
+// Display file analysis results
+function displayFileResults(data) {
+    // Hide progress and show results
+    document.getElementById('uploadProgress').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    // Display file overview
+    displayFileOverview(data.file_info);
+    
+    // Display analysis statistics
+    displayAnalysisStats(data.statistics);
+    
+    // Display entities table
+    displayFileEntitiesTable(data.detected_entities || data.results);
+    
+    // Display content preview
+    displayContentPreview(data);
+    
+    // Enable anonymized view if anonymized content is available
+    if (currentAnonymizedContent) {
+        document.getElementById('anonymizedView').disabled = false;
+        document.getElementById('downloadAnonymizedBtn').style.display = 'inline-block';
+    }
+    
+    // Scroll to results
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Display file overview
+function displayFileOverview(fileInfo) {
+    const container = document.getElementById('fileOverview');
+    
+    const overviewHTML = `
+        <div class="col-md-3">
+            <div class="d-flex align-items-center">
+                <div class="file-icon me-3">
+                    <i class="fas fa-file-${getFileIcon(fileInfo.file_type)}"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">${fileInfo.filename}</h6>
+                    <small class="text-muted">${fileInfo.file_type.toUpperCase()} File</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                <h6 class="mb-1">${getFileMetric(fileInfo.metadata, 'size')}</h6>
+                <small class="text-muted">Content Size</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-layer-group fa-2x text-info mb-2"></i>
+                <h6 class="mb-1">${getFileMetric(fileInfo.metadata, 'structure')}</h6>
+                <small class="text-muted">Structure</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h6 class="mb-1">Processed</h6>
+                <small class="text-muted">Status</small>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = overviewHTML;
+}
+
+// Display analysis statistics
+function displayAnalysisStats(stats) {
+    const container = document.getElementById('analysisStats');
+    
+    const statsHTML = `
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                <h3 class="mb-1">${stats.total_entities}</h3>
+                <p class="text-muted mb-0">Total Entities</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-percentage fa-2x text-success mb-2"></i>
+                <h3 class="mb-1">${stats.average_confidence}</h3>
+                <p class="text-muted mb-0">Avg Confidence</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                <h3 class="mb-1">${stats.high_confidence_count}</h3>
+                <p class="text-muted mb-0">High Confidence</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-tags fa-2x text-info mb-2"></i>
+                <h3 class="mb-1">${Object.keys(stats.entity_counts).length}</h3>
+                <p class="text-muted mb-0">Entity Types</p>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = statsHTML;
+}
+
+// Display entities table for file results
+function displayFileEntitiesTable(results) {
+    const tableContainer = document.getElementById('entitiesTable');
+    
+    if (!results || results.length === 0) {
+        tableContainer.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No PII entities detected in the file.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Entity Type</th>
+                        <th>Text</th>
+                        <th>Position</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    results.forEach((entity, index) => {
+        const confidenceClass = entity.score >= 0.8 ? 'success' : entity.score >= 0.5 ? 'warning' : 'danger';
+        
+        tableHTML += `
+            <tr>
+                <td>
+                    <span class="badge bg-primary">${entity.entity_type}</span>
+                </td>
+                <td>
+                    <code class="${getEntityClass(entity.entity_type)}">${entity.text}</code>
+                </td>
+                <td>
+                    <small class="text-muted">${entity.start}-${entity.end}</small>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-${confidenceClass}" style="width: ${entity.score * 100}%"></div>
+                        </div>
+                        <small>${(entity.score * 100).toFixed(1)}%</small>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    tableContainer.innerHTML = tableHTML;
+}
+
+// Display content preview
+function displayContentPreview(data) {
+    const container = document.getElementById('contentPreview');
+    
+    // Store content for switching views
+    window.originalContent = data.original_content || data.content_preview || '';
+    window.highlightedContent = '';
+    
+    // Create highlighted version if we have entities
+    const entities = data.detected_entities || data.results || [];
+    if (entities.length > 0) {
+        window.highlightedContent = highlightEntitiesInText(window.originalContent, entities);
+    }
+    
+    // Store anonymized content if available
+    if (currentAnonymizedContent) {
+        window.anonymizedContent = currentAnonymizedContent;
+    }
+    
+    // Show original content initially
+    container.innerHTML = `<pre>${window.originalContent}</pre>`;
+}
+
+// Switch content view
+function switchContentView(viewType) {
+    const container = document.getElementById('contentPreview');
+    
+    switch (viewType) {
+        case 'original':
+            container.innerHTML = `<pre>${window.originalContent || 'No content available'}</pre>`;
+            break;
+        case 'highlighted':
+            if (window.highlightedContent) {
+                container.innerHTML = `<div>${window.highlightedContent}</div>`;
+            } else {
+                container.innerHTML = `<pre>${window.originalContent || 'No content available'}</pre>`;
+            }
+            break;
+        case 'anonymized':
+            if (window.anonymizedContent) {
+                container.innerHTML = `<pre>${window.anonymizedContent}</pre>`;
+            } else {
+                container.innerHTML = '<p class="text-muted">Anonymized content not available. Enable auto-anonymization in settings.</p>';
+            }
+            break;
+    }
+}
+
+// Highlight entities in text
+function highlightEntitiesInText(text, entities) {
+    if (!entities || entities.length === 0) {
+        return text;
+    }
+    
+    // Sort entities by start position
+    const sortedEntities = [...entities].sort((a, b) => a.start - b.start);
+    
+    let highlightedText = '';
+    let lastEnd = 0;
+    
+    sortedEntities.forEach(entity => {
+        // Add text before entity
+        highlightedText += text.slice(lastEnd, entity.start);
+        
+        // Add highlighted entity
+        const entityClass = getEntityClass(entity.entity_type);
+        highlightedText += `<span class="${entityClass}" data-bs-toggle="tooltip" title="${entity.entity_type} (${(entity.score * 100).toFixed(1)}%)">${entity.text}</span>`;
+        
+        lastEnd = entity.end;
+    });
+    
+    // Add remaining text
+    highlightedText += text.slice(lastEnd);
+    
+    return highlightedText;
+}
+
+// Download content functions
+function downloadOriginalContent() {
+    if (!window.originalContent) {
+        showAlert('No original content available.', 'warning');
+        return;
+    }
+    
+    const filename = currentFileData ? `original_${currentFileData.name}` : 'original_content.txt';
+    downloadTextAsFile(window.originalContent, filename);
+}
+
+function downloadAnonymizedContent() {
+    if (!window.anonymizedContent) {
+        showAlert('No anonymized content available.', 'warning');
+        return;
+    }
+    
+    const filename = currentFileData ? `anonymized_${currentFileData.name}` : 'anonymized_content.txt';
+    downloadTextAsFile(window.anonymizedContent, filename);
+}
+
+// Export file results
+function exportFileResults(format) {
+    if (!currentAnalysisResults) {
+        showAlert('No results to export.', 'warning');
+        return;
+    }
+    
+    const entities = currentAnalysisResults.detected_entities || currentAnalysisResults.results || [];
+    
+    let content, filename, mimeType;
+    
+    if (format === 'json') {
+        content = JSON.stringify({
+            file_info: currentAnalysisResults.file_info,
+            analysis_results: entities,
+            statistics: currentAnalysisResults.statistics,
+            timestamp: new Date().toISOString()
+        }, null, 2);
+        filename = 'file_analysis_results.json';
+        mimeType = 'application/json';
+    } else if (format === 'csv') {
+        const headers = ['Entity Type', 'Text', 'Start', 'End', 'Confidence'];
+        const rows = entities.map(entity => [
+            entity.entity_type,
+            `"${entity.text.replace(/"/g, '""')}"`,
+            entity.start,
+            entity.end,
+            entity.score
+        ]);
+        
+        content = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        filename = 'file_analysis_results.csv';
+        mimeType = 'text/csv';
+    }
+    
+    downloadTextAsFile(content, filename, mimeType);
+    showAlert(`Results exported as ${format.toUpperCase()}!`, 'success');
+}
+
+// Utility functions
+function getFileIcon(fileType) {
+    const iconMap = {
+        'txt': 'alt',
+        'json': 'code',
+        'pdf': 'pdf',
+        'docx': 'word',
+        'xlsx': 'excel',
+        'csv': 'csv'
+    };
+    return iconMap[fileType] || 'alt';
+}
+
+function getFileMetric(metadata, type) {
+    if (!metadata) return 'N/A';
+    
+    switch (type) {
+        case 'size':
+            if (metadata.size !== undefined) {
+                return formatBytes(metadata.size);
+            }
+            if (metadata.lines !== undefined) {
+                return `${metadata.lines} lines`;
+            }
+            return 'N/A';
+        case 'structure':
+            if (metadata.pages !== undefined) {
+                return `${metadata.pages} pages`;
+            }
+            if (metadata.sheets !== undefined) {
+                return `${metadata.sheets} sheets`;
+            }
+            if (metadata.paragraphs !== undefined) {
+                return `${metadata.paragraphs} paragraphs`;
+            }
+            return 'Text';
+        default:
+            return 'N/A';
+    }
+}
+
+function downloadTextAsFile(content, filename, mimeType = 'text/plain') {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

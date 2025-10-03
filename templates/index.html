@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+
+{% block title %}Text Analysis - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-search text-primary me-2"></i>
+                    Text Analysis
+                </h1>
+                <p class="text-muted">Detect and anonymize personally identifiable information in text</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary" onclick="loadSampleText()">
+                    <i class="fas fa-flask me-1"></i>Load Sample
+                </button>
+                <button class="btn btn-outline-secondary ms-2" onclick="clearAll()">
+                    <i class="fas fa-trash me-1"></i>Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="mb-0">
+                            <i class="fas fa-keyboard me-2"></i>Input Text
+                        </h5>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-secondary" id="charCount">0 characters</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <textarea 
+                        id="inputText" 
+                        class="form-control" 
+                        rows="8" 
+                        placeholder="Enter text to analyze for PII... (e.g., 'My name is John Smith and my email is john@example.com')"
+                        oninput="updateCharCount()"></textarea>
+                </div>
+                
+                <!-- Analysis Options -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Entity Types</label>
+                        <select class="form-select" id="entityTypes" multiple>
+                            <option value="PERSON">Person Names</option>
+                            <option value="EMAIL_ADDRESS">Email Addresses</option>
+                            <option value="PHONE_NUMBER">Phone Numbers</option>
+                            <option value="US_SSN">Social Security Numbers</option>
+                            <option value="CREDIT_CARD">Credit Card Numbers</option>
+                            <option value="LOCATION">Locations</option>
+                            <option value="DATE_TIME">Dates & Times</option>
+                            <option value="IP_ADDRESS">IP Addresses</option>
+                            <option value="URL">URLs</option>
+                            <option value="US_DRIVER_LICENSE">Driver License</option>
+                        </select>
+                        <small class="form-text text-muted">Leave empty to detect all types</small>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Confidence Threshold</label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range me-2" id="confidenceThreshold" 
+                                   min="0.1" max="1.0" step="0.1" value="0.5" oninput="updateThresholdDisplay()">
+                            <span class="badge bg-primary" id="thresholdValue">0.5</span>
+                        </div>
+                        <small class="form-text text-muted">Minimum confidence for detection</small>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">Language</label>
+                        <select class="form-select" id="language">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-primary" onclick="analyzeText()">
+                        <i class="fas fa-search me-1"></i>Analyze Text
+                    </button>
+                    <button class="btn btn-success ms-2" onclick="anonymizeText()" disabled id="anonymizeBtn">
+                        <i class="fas fa-eye-slash me-1"></i>Anonymize
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" style="display: none;">
+            <!-- Statistics Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Analysis Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="statisticsRow">
+                        <!-- Statistics will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detected Entities -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Detected Entities
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportResults('json')">
+                            <i class="fas fa-download me-1"></i>JSON
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary ms-1" onclick="exportResults('csv')">
+                            <i class="fas fa-download me-1"></i>CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="entitiesTable">
+                        <!-- Entities table will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highlighted Text -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-highlighter me-2"></i>Highlighted Text
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="highlightedText" class="p-3 bg-light border rounded">
+                        <!-- Highlighted text will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anonymized Text -->
+            <div id="anonymizedSection" class="card mb-4" style="display: none;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye-slash me-2"></i>Anonymized Text
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('anonymizedTextContent')">
+                        <i class="fas fa-copy me-1"></i>Copy
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="anonymizedTextContent" class="p-3 bg-light border rounded">
+                        <!-- Anonymized text will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample Text Modal -->
+<div class="modal fade" id="sampleTextModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-flask me-2"></i>Sample Texts
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">Personal Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">Contains names, emails, and phone numbers</p>
+                                <button class="btn btn-sm btn-primary" onclick="loadSample('personal')">Load Sample</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">Financial Data</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">Contains credit cards, SSNs, and bank info</p>
+                                <button class="btn btn-sm btn-primary" onclick="loadSample('financial')">Load Sample</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">Medical Records</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">Contains medical license and patient data</p>
+                                <button class="btn btn-sm btn-primary" onclick="loadSample('medical')">Load Sample</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">Technical Data</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text small">Contains IP addresses, URLs, and crypto</p>
+                                <button class="btn btn-sm btn-primary" onclick="loadSample('technical')">Load Sample</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentResults = null;
+let currentText = '';
+
+// Sample texts
+const sampleTexts = {
+    personal: `Dear John Smith,
+
+Thank you for contacting our customer service. I have reviewed your account details and found the following information:
+
+Customer: Jane Doe
+Email: jane.doe@email.com
+Phone: (555) 123-4567
+Address: 123 Main Street, New York, NY 10001
+
+Please contact us at support@company.com if you have any questions.
+
+Best regards,
+Sarah Johnson
+Customer Service Representative`,
+
+    financial: `Account Holder: Michael Brown
+SSN: 123-45-6789
+Credit Card: 4532-1234-5678-9012
+Bank Account: 987654321
+Date of Birth: 01/15/1980
+
+Transaction Details:
+- Purchase at Amazon.com on 2023-10-15
+- Amount: $149.99
+- Last 4 digits of card: 9012
+
+Please verify this information is correct.`,
+
+    medical: `Patient: Dr. Emily Wilson
+Medical License: MD123456
+Patient ID: P-789456
+Date of Birth: 03/22/1975
+Phone: +1-555-987-6543
+
+Diagnosis: Routine checkup
+Prescription: Take medication as directed
+Next appointment: 2023-11-20
+
+Emergency contact: Robert Wilson (spouse)
+Phone: (555) 456-7890`,
+
+    technical: `Server Configuration Report
+
+IP Address: 192.168.1.100
+Public IP: 203.0.113.42
+Website: https://secure-server.example.com
+Admin Email: admin@techcorp.com
+
+Bitcoin Wallet: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+Ethereum Address: 0x742d35cc6634c0532925a3b8e40edb6cf834f7ed
+
+IBAN: GB29 NWBK 6016 1331 9268 19
+
+Server logs show access from multiple IPs including 10.0.0.1 and 172.16.0.1.`
+};
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateCharCount();
+    updateThresholdDisplay();
+    loadConfiguration();
+});
+
+// Character count update
+function updateCharCount() {
+    const text = document.getElementById('inputText').value;
+    const count = text.length;
+    document.getElementById('charCount').textContent = `${count} characters`;
+    
+    if (count > 10000) {
+        document.getElementById('charCount').className = 'badge bg-warning';
+    } else if (count > 5000) {
+        document.getElementById('charCount').className = 'badge bg-info';
+    } else {
+        document.getElementById('charCount').className = 'badge bg-secondary';
+    }
+}
+
+// Threshold display update
+function updateThresholdDisplay() {
+    const value = document.getElementById('confidenceThreshold').value;
+    document.getElementById('thresholdValue').textContent = value;
+}
+
+// Load sample text
+function loadSampleText() {
+    const modal = new bootstrap.Modal(document.getElementById('sampleTextModal'));
+    modal.show();
+}
+
+// Load specific sample
+function loadSample(type) {
+    if (sampleTexts[type]) {
+        document.getElementById('inputText').value = sampleTexts[type];
+        updateCharCount();
+        bootstrap.Modal.getInstance(document.getElementById('sampleTextModal')).hide();
+        showAlert('Sample text loaded successfully!', 'success');
+    }
+}
+
+// Clear all data
+function clearAll() {
+    document.getElementById('inputText').value = '';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('anonymizedSection').style.display = 'none';
+    document.getElementById('anonymizeBtn').disabled = true;
+    currentResults = null;
+    currentText = '';
+    updateCharCount();
+}
+
+// Analyze text
+async function analyzeText() {
+    const text = document.getElementById('inputText').value.trim();
+    
+    if (!text) {
+        showAlert('Please enter some text to analyze.', 'warning');
+        return;
+    }
+    
+    // Get analysis parameters
+    const entityTypesSelect = document.getElementById('entityTypes');
+    const selectedEntities = Array.from(entityTypesSelect.selectedOptions).map(option => option.value);
+    const confidenceThreshold = parseFloat(document.getElementById('confidenceThreshold').value);
+    const language = document.getElementById('language').value;
+    
+    const requestData = {
+        text: text,
+        entities: selectedEntities.length > 0 ? selectedEntities : null,
+        score_threshold: confidenceThreshold,
+        language: language
+    };
+    
+    try {
+        showLoading(true);
+        
+        const response = await makeAPIRequest('/api/analyze', {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        
+        currentResults = response.results;
+        currentText = text;
+        
+        displayResults(response);
+        document.getElementById('anonymizeBtn').disabled = false;
+        
+    } catch (error) {
+        showAlert(`Analysis failed: ${error.message}`, 'danger');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Anonymize text
+async function anonymizeText() {
+    if (!currentResults || !currentText) {
+        showAlert('Please analyze text first.', 'warning');
+        return;
+    }
+    
+    const requestData = {
+        text: currentText,
+        analyzer_results: currentResults
+    };
+    
+    try {
+        showLoading(true);
+        
+        const response = await makeAPIRequest('/api/anonymize', {
+            method: 'POST',
+            body: JSON.stringify(requestData)
+        });
+        
+        displayAnonymizedResult(response.anonymized_text);
+        
+    } catch (error) {
+        showAlert(`Anonymization failed: ${error.message}`, 'danger');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Display analysis results
+function displayResults(response) {
+    // Show results section
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    // Display statistics
+    displayStatistics(response.statistics);
+    
+    // Display entities table
+    displayEntitiesTable(response.results);
+    
+    // Display highlighted text
+    displayHighlightedText(currentText, response.results);
+    
+    // Scroll to results
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Display statistics
+function displayStatistics(stats) {
+    const statsRow = document.getElementById('statisticsRow');
+    
+    const statisticsHTML = `
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                <h3 class="mb-1">${stats.total_entities}</h3>
+                <p class="text-muted mb-0">Total Entities</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-percentage fa-2x text-success mb-2"></i>
+                <h3 class="mb-1">${stats.average_confidence}</h3>
+                <p class="text-muted mb-0">Avg Confidence</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                <h3 class="mb-1">${stats.high_confidence_count}</h3>
+                <p class="text-muted mb-0">High Confidence</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center">
+                <i class="fas fa-tags fa-2x text-info mb-2"></i>
+                <h3 class="mb-1">${Object.keys(stats.entity_counts).length}</h3>
+                <p class="text-muted mb-0">Entity Types</p>
+            </div>
+        </div>
+    `;
+    
+    statsRow.innerHTML = statisticsHTML;
+}
+
+// Display entities table
+function displayEntitiesTable(results) {
+    const tableContainer = document.getElementById('entitiesTable');
+    
+    if (!results || results.length === 0) {
+        tableContainer.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No PII entities detected in the text.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Entity Type</th>
+                        <th>Text</th>
+                        <th>Position</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    results.forEach((entity, index) => {
+        const confidenceClass = entity.score >= 0.8 ? 'success' : entity.score >= 0.5 ? 'warning' : 'danger';
+        
+        tableHTML += `
+            <tr>
+                <td>
+                    <span class="badge bg-primary">${entity.entity_type}</span>
+                </td>
+                <td>
+                    <code class="${getEntityClass(entity.entity_type)}">${entity.text}</code>
+                </td>
+                <td>
+                    <small class="text-muted">${entity.start}-${entity.end}</small>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-${confidenceClass}" style="width: ${entity.score * 100}%"></div>
+                        </div>
+                        <small>${(entity.score * 100).toFixed(1)}%</small>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    tableContainer.innerHTML = tableHTML;
+}
+
+// Display highlighted text
+function displayHighlightedText(text, entities) {
+    const container = document.getElementById('highlightedText');
+    
+    if (!entities || entities.length === 0) {
+        container.innerHTML = text;
+        return;
+    }
+    
+    // Sort entities by start position
+    const sortedEntities = [...entities].sort((a, b) => a.start - b.start);
+    
+    let highlightedText = '';
+    let lastEnd = 0;
+    
+    sortedEntities.forEach(entity => {
+        // Add text before entity
+        highlightedText += text.slice(lastEnd, entity.start);
+        
+        // Add highlighted entity
+        const entityClass = getEntityClass(entity.entity_type);
+        highlightedText += `<span class="${entityClass}" data-bs-toggle="tooltip" title="${entity.entity_type} (${(entity.score * 100).toFixed(1)}%)">${entity.text}</span>`;
+        
+        lastEnd = entity.end;
+    });
+    
+    // Add remaining text
+    highlightedText += text.slice(lastEnd);
+    
+    container.innerHTML = highlightedText;
+    
+    // Initialize tooltips
+    const tooltipTriggerList = container.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(tooltipTriggerEl => {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+// Display anonymized result
+function displayAnonymizedResult(anonymizedText) {
+    document.getElementById('anonymizedTextContent').innerHTML = anonymizedText;
+    document.getElementById('anonymizedSection').style.display = 'block';
+    document.getElementById('anonymizedSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Copy to clipboard
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent || element.innerText;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        showAlert('Text copied to clipboard!', 'success', 2000);
+    }).catch(() => {
+        showAlert('Failed to copy text to clipboard.', 'danger');
+    });
+}
+
+// Export results
+function exportResults(format) {
+    if (!currentResults) {
+        showAlert('No results to export.', 'warning');
+        return;
+    }
+    
+    let content, filename, mimeType;
+    
+    if (format === 'json') {
+        content = JSON.stringify(currentResults, null, 2);
+        filename = 'pii_analysis_results.json';
+        mimeType = 'application/json';
+    } else if (format === 'csv') {
+        const headers = ['Entity Type', 'Text', 'Start', 'End', 'Confidence'];
+        const rows = currentResults.map(entity => [
+            entity.entity_type,
+            `"${entity.text.replace(/"/g, '""')}"`,
+            entity.start,
+            entity.end,
+            entity.score
+        ]);
+        
+        content = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        filename = 'pii_analysis_results.csv';
+        mimeType = 'text/csv';
+    }
+    
+    // Create download link
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showAlert(`Results exported as ${format.toUpperCase()}!`, 'success');
+}
+</script>
+{% endblock %}

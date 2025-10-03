@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --dark-color: #1e293b;
+            --light-color: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-1px);
+        }
+
+        .main-container {
+            min-height: calc(100vh - 76px);
+            padding: 2rem 0;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #10b981);
+            border: none;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #f59e0b);
+            border: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #ef4444);
+            border: none;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            border-left-color: var(--success-color);
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+
+        .alert-danger {
+            border-left-color: var(--danger-color);
+            background-color: #fef2f2;
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            border-left-color: var(--warning-color);
+            background-color: #fffbeb;
+            color: #92400e;
+        }
+
+        .alert-info {
+            border-left-color: var(--primary-color);
+            background-color: #eff6ff;
+            color: #1e40af;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, var(--dark-color), #374151);
+            color: white;
+            font-weight: 600;
+            border: none;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 6px;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .entity-highlight {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin: 0 2px;
+            display: inline-block;
+        }
+
+        .entity-person { background-color: #dbeafe; border-color: #3b82f6; }
+        .entity-email { background-color: #dcfce7; border-color: #10b981; }
+        .entity-phone { background-color: #fef3c7; border-color: #f59e0b; }
+        .entity-ssn { background-color: #fecaca; border-color: #ef4444; }
+        .entity-credit_card { background-color: #fce7f3; border-color: #ec4899; }
+        .entity-location { background-color: #e0e7ff; border-color: #6366f1; }
+
+        .progress {
+            height: 8px;
+            border-radius: 10px;
+            background-color: #f1f5f9;
+        }
+
+        .progress-bar {
+            border-radius: 10px;
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: #cbd5e1;
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem 0;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-alt me-2"></i>
+                {{ app_name }}
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-search me-1"></i>Text Analysis
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_page') }}">
+                            <i class="fas fa-upload me-1"></i>File Upload
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('batch_page') }}">
+                            <i class="fas fa-layer-group me-1"></i>Batch Processing
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('documentation') }}">
+                            <i class="fas fa-book me-1"></i>API Docs
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="settingsModal" data-bs-toggle="modal" data-bs-target="#configModal">
+                                <i class="fas fa-sliders-h me-2"></i>Configuration
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="aboutModal" data-bs-toggle="modal" data-bs-target="#aboutAppModal">
+                                <i class="fas fa-info-circle me-2"></i>About
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-shield-alt me-2"></i>{{ app_name }}</h5>
+                    <p class="mb-0">Advanced PII detection and anonymization using Microsoft Presidio</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1">Version: {{ version }}</p>
+                    <p class="mb-0">
+                        <small>
+                            Supported formats: {{ supported_file_types | join(', ') | upper }}
+                            <br>Max file size: {{ max_file_size }}MB
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Configuration Modal -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-sliders-h me-2"></i>Application Configuration
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cogs me-2"></i>Detection Settings</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Confidence Threshold</label>
+                                <input type="range" class="form-range" id="confidenceRange" min="0.1" max="1.0" step="0.1" value="0.5">
+                                <div class="d-flex justify-content-between">
+                                    <small>0.1</small>
+                                    <small id="confidenceValue">0.5</small>
+                                    <small>1.0</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Language</label>
+                                <select class="form-select" id="languageSelect">
+                                    <option value="en">English</option>
+                                    <option value="es">Spanish</option>
+                                    <option value="fr">French</option>
+                                    <option value="de">German</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-eye-slash me-2"></i>Anonymization</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Default Strategy</label>
+                                <select class="form-select" id="anonymizationStrategy">
+                                    <option value="replace">Replace</option>
+                                    <option value="redact">Redact</option>
+                                    <option value="mask">Mask</option>
+                                    <option value="hash">Hash</option>
+                                </select>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="highlightEntities" checked>
+                                <label class="form-check-label" for="highlightEntities">
+                                    Highlight detected entities
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveConfiguration()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutAppModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle me-2"></i>About {{ app_name }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                        <h4>{{ app_name }}</h4>
+                        <p class="text-muted">Version {{ version }}</p>
+                    </div>
+                    <p>Advanced personally identifiable information (PII) detection and anonymization system built with:</p>
+                    <ul>
+                        <li><strong>Microsoft Presidio</strong> - PII detection engine</li>
+                        <li><strong>Flask</strong> - Web framework</li>
+                        <li><strong>SpaCy</strong> - Natural language processing</li>
+                        <li><strong>Bootstrap</strong> - UI framework</li>
+                    </ul>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <i class="fas fa-search fa-2x text-primary mb-2"></i>
+                            <p><small><strong>Detect</strong><br>Find PII in text</small></p>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-eye-slash fa-2x text-success mb-2"></i>
+                            <p><small><strong>Anonymize</strong><br>Protect sensitive data</small></p>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-file fa-2x text-warning mb-2"></i>
+                            <p><small><strong>Process</strong><br>Handle multiple formats</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <h5>Processing...</h5>
+            <p class="text-muted mb-0">Please wait while we analyze your data</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+    <script>
+        // Global configuration
+        let appConfig = {
+            confidenceThreshold: 0.5,
+            language: 'en',
+            anonymizationStrategy: 'replace',
+            highlightEntities: true
+        };
+
+        // Load configuration from localStorage
+        function loadConfiguration() {
+            const saved = localStorage.getItem('pii_app_config');
+            if (saved) {
+                appConfig = { ...appConfig, ...JSON.parse(saved) };
+                updateConfigUI();
+            }
+        }
+
+        // Save configuration to localStorage
+        function saveConfiguration() {
+            appConfig.confidenceThreshold = parseFloat(document.getElementById('confidenceRange').value);
+            appConfig.language = document.getElementById('languageSelect').value;
+            appConfig.anonymizationStrategy = document.getElementById('anonymizationStrategy').value;
+            appConfig.highlightEntities = document.getElementById('highlightEntities').checked;
+            
+            localStorage.setItem('pii_app_config', JSON.stringify(appConfig));
+            
+            // Close modal and show success message
+            bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+            showAlert('Configuration saved successfully!', 'success');
+        }
+
+        // Update configuration UI
+        function updateConfigUI() {
+            document.getElementById('confidenceRange').value = appConfig.confidenceThreshold;
+            document.getElementById('confidenceValue').textContent = appConfig.confidenceThreshold;
+            document.getElementById('languageSelect').value = appConfig.language;
+            document.getElementById('anonymizationStrategy').value = appConfig.anonymizationStrategy;
+            document.getElementById('highlightEntities').checked = appConfig.highlightEntities;
+        }
+
+        // Update confidence threshold display
+        document.addEventListener('DOMContentLoaded', function() {
+            const confidenceRange = document.getElementById('confidenceRange');
+            const confidenceValue = document.getElementById('confidenceValue');
+            
+            confidenceRange?.addEventListener('input', function() {
+                confidenceValue.textContent = this.value;
+            });
+            
+            loadConfiguration();
+        });
+
+        // Utility functions
+        function showLoading(show = true) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showAlert(message, type = 'info', duration = 5000) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert at the top of the main container
+            const container = document.querySelector('.main-container .container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto-dismiss
+            if (duration > 0) {
+                setTimeout(() => {
+                    const alert = bootstrap.Alert.getOrCreateInstance(alertDiv);
+                    alert.close();
+                }, duration);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function getEntityClass(entityType) {
+            const classMap = {
+                'PERSON': 'entity-person',
+                'EMAIL_ADDRESS': 'entity-email',
+                'PHONE_NUMBER': 'entity-phone',
+                'US_SSN': 'entity-ssn',
+                'CREDIT_CARD': 'entity-credit_card',
+                'LOCATION': 'entity-location'
+            };
+            return classMap[entityType] || 'entity-highlight';
+        }
+
+        // API helper functions
+        async function makeAPIRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'API request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
